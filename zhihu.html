@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title></title>
+		<style>
+			*{
+				margin: 0;
+				padding: 0;
+			}
+			#canvas{
+				display: block;
+				background: orange;
+				margin: 20px auto;
+			}
+		</style>
+	</head>
+	<body style="width: 100%;height: 100%;">
+		<div class="wrapper">
+			<canvas id="canvas" width="1200px" height="450px"></canvas>
+		</div>
+		<script>
+			window.onload = function(){
+				var canvas = document.getElementById("canvas");
+				var context = canvas.getContext("2d");
+				var arr = [];
+				var locations = [];
+				var w = canvas.clientWidth;
+				var h = canvas.clientHeight;
+				context.fillStyle = 'rgba(255, 255, 255, .5)';
+				context.strokeStyle = 'rgba(255, 255, 255, .3)';
+				context.lineWidth = 1 ;
+
+				var animate = new drawAnimation(context, w, h);
+					
+				animation(animate);
+			}
+
+			function drawAnimation(context, w, h){
+				this.ele = context;
+				this.arr = [];
+				this.locations = [];
+				this.w = w;
+				this.h =h;
+				this.init();				
+			};
+			drawAnimation.prototype.init = function(){
+				for(var i = 0; i < 50; i++){
+					//圆心坐标
+					var x = Math.ceil( Math.random() * this.w);
+					var y = Math.ceil( Math.random() * this.h);
+					var r = Math.ceil( Math.random() * 8) + 7;
+					if((x + r) > this.w){
+						x = this.w -r;
+					}
+					if(x < r){
+						x = r;
+					}
+					if((y + r) > this.h){
+						y = this.h - r;
+					}
+					if(y < r){
+						y = r;
+					}
+					var newCircle= new createArc(this.ele, x, y, r,createArr(x, y));	
+					this.arr.push(newCircle);
+					this.locations.push([x, y]);
+				}
+			}
+
+			function animation(ele){
+				ele.ele.clearRect(0, 0, ele.w, ele.h);
+				for(var i = 0; i < 50; i++){
+										
+					ele.arr[i].paint();
+					for(var j = i + 1; j < 50; j++){
+						var x = ele.arr[i].x;
+						var y = ele.arr[i].y;
+						var jx = ele.arr[j].x;
+						var jy = ele.arr[j].y;
+
+						var dx = x - jx; 
+						var dy = y - jy;
+						var d = Math.sqrt(dx * dx + dy * dy);
+						if(d < ele.h / 4){
+							ele.arr[i].drawLine(jx, jy)
+						}
+					}
+					ele.arr[i].moving();
+				}
+
+				//requestAnimationFrame兼容性
+				window.requestAnimFrame =
+				    window.requestAnimationFrame ||
+				    window.webkitRequestAnimationFrame ||
+				    window.mozRequestAnimationFrame ||
+				    window.oRequestAnimationFrame ||
+				    window.msRequestAnimationFrame||
+				    function(callback) {
+				        window.setTimeout(callback, 1000 / 30);
+				    };
+
+				window.requestAnimFrame(function(){
+					animation(ele)
+				});
+			}
+
+			function createArr(x, y){
+				var arr = [];
+				var p0 = {x: null, y: null}, 
+					p1 = {x: null, y: null}, 
+					p2 = {x: null, y: null}, 
+					p3 = {x: null, y: null};//贝塞尔曲线四个点
+					p0.x = x, p0.y = y;
+					p1.x = Math.ceil( Math.random() * 1200),
+					p1.y = Math.ceil( Math.random() * 450),
+					p2.x = Math.ceil( Math.random() * 1200),
+					p2.y = Math.ceil( Math.random() * 450),
+					p3.x = Math.ceil( Math.random() * 1200),
+					p3.y = Math.ceil( Math.random() * 450);
+				arr= [p0, p1, p2, p3];
+				return arr;
+			}
+			
+			function createArc(canObj, x, y, r, bezier){
+				this.x = x; //圆心x轴
+				this.y = y; //圆心y轴
+				this.r = r; //半径
+				this.t = .01;
+				this.bezier = bezier;
+				this.speed = .4 * 0.003;
+				this.ele = canObj;
+				
+				this.paint = function(){
+					this.ele.beginPath();
+					this.ele.arc(this.x, this.y, this.r, 0, 2*Math.PI);
+					this.ele.closePath();
+					this.ele.fill();
+				}
+				
+				this.moving = function(){
+					var beziers = this.bezier;
+					var t = this.t;
+			        var cx = 3 * (beziers[1].x - beziers[0].x);
+			        var bx = 3 * (beziers[2].x - beziers[1].x) - cx;
+			        var ax = beziers[3].x - beziers[0].x - cx - bx;
+			        
+			        var cy = 3 * (beziers[1].y - beziers[0].y);
+			        var by = 3 * (beziers[2].y - beziers[1].y) - cy;
+			        var ay = beziers[3].y - beziers[0].y - cy - by;
+					
+					this.x = ax*(t*t*t)+bx*(t*t)+cx*t+beziers[0].x;
+        			this.y = ay*(t*t*t)+by*(t*t)+cy*t+beziers[0].y;
+					if(this.t + this.speed >= 1){
+						this.speed = -this.speed;
+					}else if (this.t + this.speed <= 0){
+						this.speed = - this.speed;
+					}
+					this.t += this.speed;
+				}
+				
+				this.drawLine = function(x, y){
+					this.ele.beginPath();
+					this.ele.moveTo(this.x, this.y);
+					this.ele.lineTo(x, y);
+					this.ele.closePath();
+					this.ele.stroke();
+				}
+			};
+
+		</script>
+	</body>
+</html>
